@@ -1,0 +1,399 @@
+# Atlassian Skills API Reference
+
+Detailed usage examples and API documentation for Jira and Confluence tools.
+
+## Jira Examples
+
+### Search for Issues
+
+```python
+from scripts.jira_search import jira_search
+
+# Search using JQL
+result = jira_search("project = MYPROJ AND status = 'In Progress'", limit=10)
+
+# Search with specific fields
+result = jira_search(
+    jql="assignee = currentUser() AND status != Done",
+    fields="summary,status,priority",
+    limit=20
+)
+```
+
+### Create an Issue
+
+```python
+from scripts.jira_issues import jira_create_issue
+
+result = jira_create_issue(
+    project_key="MYPROJ",
+    summary="Implement new feature",
+    issue_type="Task",
+    description="Detailed description here",
+    priority="High",
+    labels=["backend", "api"]
+)
+```
+
+### Update an Issue
+
+```python
+from scripts.jira_issues import jira_update_issue
+
+result = jira_update_issue(
+    issue_key="MYPROJ-123",
+    summary="Updated summary",
+    priority="Critical"
+)
+```
+
+### Transition an Issue
+
+```python
+from scripts.jira_workflow import jira_get_transitions, jira_transition_issue
+
+# Get available transitions
+transitions = jira_get_transitions("MYPROJ-123")
+
+# Transition to a new status
+result = jira_transition_issue(
+    issue_key="MYPROJ-123",
+    transition_id="31",
+    comment="Moving to In Progress"
+)
+```
+
+### Add Worklog
+
+```python
+from scripts.jira_worklog import jira_add_worklog
+
+result = jira_add_worklog(
+    issue_key="MYPROJ-123",
+    time_spent="2h 30m",
+    comment="Worked on implementation"
+)
+```
+
+### Link Issues
+
+```python
+from scripts.jira_links import jira_create_issue_link, jira_link_to_epic
+
+# Create a link between issues
+result = jira_create_issue_link(
+    link_type="Blocks",
+    inward_issue_key="MYPROJ-123",
+    outward_issue_key="MYPROJ-456"
+)
+
+# Link to an epic
+result = jira_link_to_epic(
+    issue_key="MYPROJ-123",
+    epic_key="MYPROJ-100"
+)
+```
+
+### Agile Boards and Sprints
+
+```python
+from scripts.jira_agile import (
+    jira_get_agile_boards,
+    jira_get_sprints_from_board,
+    jira_create_sprint
+)
+
+# Find boards
+boards = jira_get_agile_boards(project_key="MYPROJ")
+
+# Get active sprints
+sprints = jira_get_sprints_from_board(board_id="123", state="active")
+
+# Create a sprint
+result = jira_create_sprint(
+    board_id="123",
+    sprint_name="Sprint 5",
+    start_date="2024-01-15",
+    end_date="2024-01-29",
+    goal="Complete API integration"
+)
+```
+
+## Confluence Examples
+
+### Search for Pages
+
+```python
+from scripts.confluence_search import confluence_search
+
+result = confluence_search("API documentation", limit=10)
+```
+
+### Get a Page
+
+```python
+from scripts.confluence_pages import confluence_get_page
+
+# Get by ID
+result = confluence_get_page(page_id="123456")
+
+# Get by title and space
+result = confluence_get_page(title="API Guide", space_key="DEV")
+```
+
+### Create a Page
+
+```python
+from scripts.confluence_pages import confluence_create_page
+
+result = confluence_create_page(
+    space_key="DEV",
+    title="New Documentation Page",
+    content="# Welcome\n\nThis is **markdown** content.",
+    parent_id="123456"
+)
+```
+
+### Update a Page
+
+```python
+from scripts.confluence_pages import confluence_update_page
+
+result = confluence_update_page(
+    page_id="123456",
+    title="Updated Title",
+    content="# Updated Content\n\nNew information here."
+)
+```
+
+### Manage Comments
+
+```python
+from scripts.confluence_comments import confluence_add_comment, confluence_get_comments
+
+# Get comments
+comments = confluence_get_comments(page_id="123456")
+
+# Add comment
+result = confluence_add_comment(
+    page_id="123456",
+    content="Great documentation!"
+)
+```
+
+### Manage Labels
+
+```python
+from scripts.confluence_labels import confluence_add_label, confluence_remove_label
+
+# Add label
+result = confluence_add_label(page_id="123456", name="api-docs")
+
+# Remove label
+result = confluence_remove_label(page_id="123456", name="outdated")
+```
+
+## JQL Query Examples
+
+Common JQL patterns for searching Jira issues:
+
+```
+# Issues assigned to current user
+assignee = currentUser()
+
+# Open issues in a project
+project = MYPROJ AND status != Done
+
+# High priority bugs
+project = MYPROJ AND issuetype = Bug AND priority = High
+
+# Issues updated in last 7 days
+updated >= -7d
+
+# Issues in current sprint
+sprint in openSprints()
+
+# Unassigned issues
+assignee is EMPTY
+
+# Issues with specific label
+labels = "backend"
+
+# Issues created by specific user
+reporter = "user@example.com"
+
+# Combined query
+project = MYPROJ AND status = "In Progress" AND assignee = currentUser() ORDER BY priority DESC
+```
+
+## CQL Query Examples
+
+Common CQL patterns for searching Confluence:
+
+```
+# Search by text
+text ~ "API documentation"
+
+# Search in specific space
+space = DEV AND text ~ "guide"
+
+# Search by title
+title ~ "Getting Started"
+
+# Search by label
+label = "api-docs"
+
+# Search by type
+type = page AND space = DEV
+
+# Recently modified
+lastModified >= now("-7d")
+
+# Created by user
+creator = "user@example.com"
+```
+
+## Time Format Reference
+
+For worklog entries, use these time formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| Weeks | `1w` | 1 week |
+| Days | `2d` | 2 days |
+| Hours | `3h` | 3 hours |
+| Minutes | `30m` | 30 minutes |
+| Combined | `1d 4h 30m` | 1 day, 4 hours, 30 minutes |
+| Seconds | `3600` | 3600 seconds (1 hour) |
+
+## Response Format
+
+### Success Response
+
+```json
+{
+  "key": "MYPROJ-123",
+  "summary": "Issue title",
+  "status": "In Progress",
+  "assignee": "user@example.com"
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Issue not found: MYPROJ-999",
+  "error_type": "NotFoundError"
+}
+```
+
+### Paginated Response
+
+```json
+{
+  "issues": [...],
+  "total": 150,
+  "start_at": 0,
+  "max_results": 10,
+  "is_last": false
+}
+```
+
+## Bitbucket Examples
+
+### Get Recent Commits
+
+```python
+from scripts.bitbucket_commits import bitbucket_get_commits
+import json
+
+# Get latest 10 commits from master branch
+result = bitbucket_get_commits(
+    project_key="PROJ",
+    repository_slug="my-repo",
+    branch="master",
+    limit=10
+)
+
+# Parse and display commits
+data = json.loads(result)
+for commit in data['commits']:
+    print(f"{commit['display_id']}: {commit['message']}")
+    print(f"  Author: {commit['author_name']}")
+    print(f"  Date: {commit['timestamp']}")
+```
+
+### Get Specific Commit Details
+
+```python
+from scripts.bitbucket_commits import bitbucket_get_commit
+import json
+
+# Get details of a specific commit
+result = bitbucket_get_commit(
+    project_key="PROJ",
+    repository_slug="my-repo",
+    commit_id="1da11eaec25aed8b251de24841885c91493b3173"
+)
+
+# Parse commit details
+commit = json.loads(result)
+print(f"Commit: {commit['display_id']}")
+print(f"Message: {commit['message']}")
+print(f"Author: {commit['author_name']} <{commit['author_email']}>")
+print(f"Timestamp: {commit['timestamp']}")
+```
+
+### List Pull Requests
+
+```python
+from scripts.bitbucket_pull_requests import bitbucket_get_pull_request
+
+# Get PR details
+result = bitbucket_get_pull_request(
+    project_key="PROJ",
+    repository_slug="my-repo",
+    pr_id=123
+)
+```
+
+### Search Code
+
+```python
+from scripts.bitbucket_files import bitbucket_search
+
+# Search for specific code pattern
+result = bitbucket_search(
+    query="def authenticate",
+    project_key="PROJ",
+    search_type="code",
+    limit=25
+)
+```
+
+### Bitbucket Commit Response Structure
+
+```json
+{
+  "project_key": "PROJ",
+  "repository": "my-repo",
+  "branch": "master",
+  "total": 5,
+  "is_last_page": false,
+  "commits": [
+    {
+      "id": "1da11eaec25aed8b251de24841885c91493b3173",
+      "display_id": "1da11eaec25",
+      "message": "Feature: Add new API endpoint",
+      "author_name": "John Doe",
+      "author_email": "john.doe@company.com",
+      "committer_name": "John Doe",
+      "committer_email": "john.doe@company.com",
+      "timestamp": 1765534577000,
+      "parents": ["b97ad25d330e36480b045c5dea36f97999297ff6"]
+    }
+  ]
+}
+```
