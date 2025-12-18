@@ -2,6 +2,8 @@
 
 A Claude Code skill for integrating with Jira, Confluence, and Bitbucket. Supports both Cloud and Data Center deployments.
 
+**Note**: This project has been tested and verified on Atlassian Data Center. Cloud functionality has not been verified yet. If you encounter any issues with Cloud deployments, please report them.
+
 ## What is a Skill?
 
 Skills are folders containing a `SKILL.md` file that teach Claude Code new capabilities. When you add this skill to your project, Claude can directly interact with your Atlassian products - creating issues, searching pages, managing pull requests, and more.
@@ -216,6 +218,30 @@ Error types: `ConfigurationError`, `AuthenticationError`, `ValidationError`, `No
 ## Time Format Reference
 
 For worklogs: `1w` (week), `2d` (days), `3h` (hours), `30m` (minutes), or combined like `1d 4h 30m`
+
+## Testing
+
+This project includes comprehensive test coverage with **203 test cases** covering all 45 methods across Jira, Confluence, and Bitbucket.
+
+### Run Tests
+
+```bash
+# Install test dependencies
+pip install -r test/requirements.txt
+
+# Run all tests
+pytest test/ -v
+
+# Run specific module tests
+pytest test/test_jira_*.py -v
+pytest test/test_confluence_*.py -v
+pytest test/test_bitbucket_*.py -v
+
+# Generate coverage report
+pytest test/ --cov=atlassian-skills/scripts --cov-report=html
+```
+
+See [test/README.md](test/README.md) for detailed testing documentation.
 
 ## License
 
