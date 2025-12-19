@@ -1,4 +1,4 @@
-# Atlassian Skills
+# Atlassian Skills for Claude Code - Jira, Confluence & Bitbucket Integration
 
 A Claude Code skill for integrating with Jira, Confluence, and Bitbucket. Supports both Cloud and Data Center deployments.
 
