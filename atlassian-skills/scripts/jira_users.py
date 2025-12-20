@@ -39,6 +39,8 @@ def _simplify_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
 def jira_get_user_profile(user_identifier: str) -> str:
     """Get Jira user profile by identifier.
     
+    Supports both Jira Cloud (accountId) and Jira Data Center/Server (username).
+    
     Args:
         user_identifier: User identifier (email, account ID, username, or key)
     
@@ -53,15 +55,34 @@ def jira_get_user_profile(user_identifier: str) -> str:
         
         # Try different lookup methods
         user_data = None
+        is_cloud = client.config.is_cloud
         
-        # Method 1: Try as account ID
+        # Method 1: Try as account ID (Cloud) or username (Data Center)
         try:
-            params = {'accountId': user_identifier}
+            if is_cloud:
+                params = {'accountId': user_identifier}
+            else:
+                # Data Center/Server uses 'username' parameter
+                params = {'username': user_identifier}
             user_data = client.get(client.api_path('user'), params=params)
-        except (NotFoundError, APIError):
+        except (NotFoundError, APIError, ValidationError):
             pass
         
-        # Method 2: Try user search by query
+        # Method 2: Try the opposite parameter if Method 1 failed
+        # This handles cases where we can't reliably detect Cloud vs Data Center
+        if not user_data:
+            try:
+                if is_cloud:
+                    # Try username parameter on Cloud (shouldn't work but worth trying)
+                    params = {'username': user_identifier}
+                else:
+                    # Try accountId parameter on Data Center (for hybrid scenarios)
+                    params = {'accountId': user_identifier}
+                user_data = client.get(client.api_path('user'), params=params)
+            except (NotFoundError, APIError, ValidationError):
+                pass
+        
+        # Method 3: Try user search by query
         if not user_data:
             try:
                 params = {'query': user_identifier, 'maxResults': 1}
@@ -71,16 +92,19 @@ def jira_get_user_profile(user_identifier: str) -> str:
             except (NotFoundError, APIError):
                 pass
         
-        # Method 3: Try user picker
+        # Method 4: Try user picker
         if not user_data:
             try:
                 params = {'query': user_identifier, 'maxResults': 1}
                 response = client.get(client.api_path('user/picker'), params=params)
                 users = response.get('users', [])
                 if users:
-                    account_id = users[0].get('accountId')
-                    if account_id:
-                        params = {'accountId': account_id}
+                    # Try to get full user data using the appropriate parameter
+                    if is_cloud and users[0].get('accountId'):
+                        params = {'accountId': users[0].get('accountId')}
+                        user_data = client.get(client.api_path('user'), params=params)
+                    elif not is_cloud and users[0].get('name'):
+                        params = {'username': users[0].get('name')}
                         user_data = client.get(client.api_path('user'), params=params)
             except (NotFoundError, APIError):
                 pass

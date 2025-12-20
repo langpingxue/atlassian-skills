@@ -162,15 +162,6 @@ from scripts.confluence_labels import confluence_get_labels
 labels = confluence_get_labels(page_id="123456")
 ```
 
-### Search Users
-
-```python
-from scripts.confluence_users import confluence_search_users
-
-# Search for users
-result = confluence_search_users("john", limit=10)
-```
-
 ## Bitbucket Examples
 
 ### List Projects and Repositories

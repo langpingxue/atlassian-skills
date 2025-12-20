@@ -146,10 +146,16 @@ def bitbucket_search(
             project = repo.get("project", {})
             file_info = item.get("file", {})
             
+            # Handle file field - can be string or object depending on API version
+            if isinstance(file_info, str):
+                file_path = file_info
+            else:
+                file_path = file_info.get("toString", file_info.get("path", ""))
+            
             results.append({
                 "repository": repo.get("slug", ""),
                 "project": project.get("key", ""),
-                "file": file_info.get("toString", file_info.get("path", "")),
+                "file": file_path,
                 "hit_count": item.get("hitCount", 0),
                 "matches": [m.get("text", "") for m in item.get("hitContexts", [])],
             })

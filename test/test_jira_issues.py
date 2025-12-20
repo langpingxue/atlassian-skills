@@ -108,6 +108,34 @@ class TestJiraCreateIssue:
         assert 'key' in data
 
     @patch('scripts.jira_issues.get_jira_client')
+    def test_create_issue_with_custom_fields(self, mock_get_client, sample_issue_data):
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.api_path = lambda x: f'/rest/api/2/{x}'
+        mock_client.post.return_value = {'key': 'PROJ-125'}
+        mock_client.get.return_value = sample_issue_data
+
+        result = jira_create_issue(
+            project_key='PROJ',
+            summary='Issue with custom fields',
+            issue_type='Task',
+            custom_fields={
+                'customfield_10001': 'Sprint 5',
+                'customfield_10002': 123
+            }
+        )
+        data = json.loads(result)
+
+        assert 'key' in data
+        # Verify custom fields were included in the API call
+        call_args = mock_client.post.call_args
+        payload = call_args[1]['json']
+        assert 'customfield_10001' in payload['fields']
+        assert payload['fields']['customfield_10001'] == 'Sprint 5'
+        assert 'customfield_10002' in payload['fields']
+        assert payload['fields']['customfield_10002'] == 123
+
+    @patch('scripts.jira_issues.get_jira_client')
     def test_create_issue_missing_project_key(self, mock_get_client):
         mock_get_client.return_value = MagicMock()
         result = jira_create_issue(
@@ -170,6 +198,30 @@ class TestJiraUpdateIssue:
 
         assert data['success'] is False
         assert data['error_type'] == 'ValidationError'
+
+    @patch('scripts.jira_issues.get_jira_client')
+    def test_update_issue_with_custom_fields(self, mock_get_client, sample_issue_data):
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.api_path = lambda x: f'/rest/api/2/{x}'
+        mock_client.put.return_value = {}
+        mock_client.get.return_value = sample_issue_data
+
+        result = jira_update_issue(
+            'PROJ-123',
+            summary='Updated',
+            custom_fields={
+                'customfield_10001': 'New value'
+            }
+        )
+        data = json.loads(result)
+
+        assert 'key' in data
+        # Verify custom fields were included in the API call
+        call_args = mock_client.put.call_args
+        payload = call_args[1]['json']
+        assert 'customfield_10001' in payload['fields']
+        assert payload['fields']['customfield_10001'] == 'New value'
 
 
 class TestJiraDeleteIssue:

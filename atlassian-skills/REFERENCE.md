@@ -31,7 +31,11 @@ result = jira_create_issue(
     issue_type="Task",
     description="Detailed description here",
     priority="High",
-    labels=["backend", "api"]
+    labels=["backend", "api"],
+    custom_fields={
+        "customfield_10001": "Sprint 5",
+        "customfield_10002": {"value": "Option A"}
+    }
 )
 ```
 
@@ -43,7 +47,10 @@ from scripts.jira_issues import jira_update_issue
 result = jira_update_issue(
     issue_key="MYPROJ-123",
     summary="Updated summary",
-    priority="Critical"
+    priority="Critical",
+    custom_fields={
+        "customfield_10001": "Updated value"
+    }
 )
 ```
 

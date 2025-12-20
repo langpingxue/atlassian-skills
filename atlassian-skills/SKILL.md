@@ -97,7 +97,11 @@ jira_create_issue(
     description="Description",
     assignee="user@company.com",
     priority="High",
-    labels=["urgent", "backend"]
+    labels=["urgent", "backend"],
+    custom_fields={
+        "customfield_10001": "Custom value",
+        "customfield_10002": 123
+    }
 )
 ```
 
@@ -394,17 +398,13 @@ bitbucket_get_commit(
 )
 ```
 
-### User Utilities
+### Jira Users (`scripts.jira_users`)
 
 ```python
 from scripts.jira_users import jira_get_user_profile
-from scripts.confluence_users import confluence_search_users
 
-# Get Jira user
+# Get Jira user profile
 jira_get_user_profile(user_identifier="user@company.com")
-
-# Search Confluence users
-confluence_search_users(query="john", limit=10)
 ```
 
 ## Response Data Structures
