@@ -213,9 +213,6 @@ Once configured, simply ask Claude to perform Atlassian operations:
 - `confluence_add_label` - Add a label to a page
 - `confluence_remove_label` - Remove a label from a page
 
-**confluence_users**
-- `confluence_search_users` - Search for users
-
 ### Bitbucket
 
 **bitbucket_projects**
