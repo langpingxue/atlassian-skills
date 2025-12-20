@@ -75,7 +75,8 @@ def jira_create_issue(
     description: Optional[str] = None,
     assignee: Optional[str] = None,
     priority: Optional[str] = None,
-    labels: Optional[List[str]] = None
+    labels: Optional[List[str]] = None,
+    custom_fields: Optional[Dict[str, Any]] = None
 ) -> str:
     """Create a new Jira issue.
     
@@ -87,6 +88,8 @@ def jira_create_issue(
         assignee: Assignee account ID (optional)
         priority: Priority name (e.g., 'High', 'Medium', 'Low') (optional)
         labels: List of label strings (optional)
+        custom_fields: Dictionary of custom field IDs to values (optional)
+                      e.g., {'customfield_10001': 'value', 'customfield_10002': 123}
     
     Returns:
         JSON string with created issue data or error information
@@ -115,6 +118,8 @@ def jira_create_issue(
             fields['priority'] = {'name': priority}
         if labels:
             fields['labels'] = labels
+        if custom_fields:
+            fields.update(custom_fields)
         
         payload = {'fields': fields}
         response = client.post(client.api_path('issue'), json=payload)
@@ -142,7 +147,8 @@ def jira_update_issue(
     description: Optional[str] = None,
     assignee: Optional[str] = None,
     priority: Optional[str] = None,
-    labels: Optional[List[str]] = None
+    labels: Optional[List[str]] = None,
+    custom_fields: Optional[Dict[str, Any]] = None
 ) -> str:
     """Update an existing Jira issue.
     
@@ -153,6 +159,8 @@ def jira_update_issue(
         assignee: New assignee account ID (optional)
         priority: New priority name (optional)
         labels: New list of labels (optional)
+        custom_fields: Dictionary of custom field IDs to values (optional)
+                      e.g., {'customfield_10001': 'value', 'customfield_10002': 123}
     
     Returns:
         JSON string with updated issue data or error information
@@ -174,6 +182,8 @@ def jira_update_issue(
             fields['priority'] = {'name': priority}
         if labels is not None:
             fields['labels'] = labels
+        if custom_fields is not None:
+            fields.update(custom_fields)
         
         if not fields:
             raise ValidationError('At least one field to update is required')

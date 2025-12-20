@@ -97,7 +97,11 @@ jira_create_issue(
     description="Description",
     assignee="user@company.com",
     priority="High",
-    labels=["urgent", "backend"]
+    labels=["urgent", "backend"],
+    custom_fields={
+        "customfield_10001": "Custom value",
+        "customfield_10002": 123
+    }
 )
 ```
 
