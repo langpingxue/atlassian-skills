@@ -157,7 +157,10 @@ def bitbucket_search(
                 "project": project.get("key", ""),
                 "file": file_path,
                 "hit_count": item.get("hitCount", 0),
-                "matches": [m.get("text", "") for m in item.get("hitContexts", [])],
+                "matches": [
+                    m.get("text", "") if isinstance(m, dict) else str(m) if not isinstance(m, list) else ""
+                    for m in item.get("hitContexts", [])
+                ],
             })
         
         result = {
