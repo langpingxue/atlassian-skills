@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     simplify_issue,
     format_json_response,
@@ -64,7 +65,8 @@ def _simplify_transition(transition_data: Dict[str, Any]) -> Dict[str, Any]:
     return simplified
 
 
-def jira_get_transitions(issue_key: str) -> str:
+def jira_get_transitions(issue_key: str,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get available status transitions for a Jira issue.
     
     Args:
@@ -74,7 +76,7 @@ def jira_get_transitions(issue_key: str) -> str:
         JSON string with list of available transitions or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')
@@ -114,7 +116,8 @@ def jira_transition_issue(
     transition_id: str,
     fields: Optional[Dict[str, Any]] = None,
     comment: Optional[str] = None
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Transition a Jira issue to a new status.
     
     Args:
@@ -127,7 +130,7 @@ def jira_transition_issue(
         JSON string with the updated issue data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')

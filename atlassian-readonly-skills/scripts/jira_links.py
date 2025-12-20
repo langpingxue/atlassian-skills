@@ -31,14 +31,15 @@ def _simplify_link_type(link_type_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def jira_get_link_types() -> str:
+def jira_get_link_types(
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get all available issue link types.
     
     Returns:
         JSON string with list of link types or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         response = client.get(client.api_path('issueLinkType'))
         

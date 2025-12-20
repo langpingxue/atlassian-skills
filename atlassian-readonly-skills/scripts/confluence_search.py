@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_confluence_client,
     format_json_response,
     format_error_response,
@@ -40,7 +41,8 @@ def confluence_search(
     query: str,
     limit: int = 10,
     start_at: int = 0
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Search for Confluence content using CQL.
     
     Args:
@@ -52,7 +54,7 @@ def confluence_search(
         JSON string with search results or error information
     """
     try:
-        client = get_confluence_client()
+        client = get_confluence_client(credentials)
         
         if not query:
             raise ValidationError('query is required')

@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, List, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     simplify_issue,
     format_json_response,
@@ -31,7 +32,8 @@ from _common import (
 def jira_get_issue(
     issue_key: str,
     fields: Optional[str] = None,
-    expand: Optional[str] = None
+    expand: Optional[str] = None,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Retrieve a Jira issue by key.
     
@@ -39,12 +41,14 @@ def jira_get_issue(
         issue_key: Issue key (e.g., 'PROJ-123')
         fields: Comma-separated list of fields to return (optional)
         expand: Comma-separated list of entities to expand (optional)
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with issue data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         params: Dict[str, Any] = {}
         if fields:
@@ -76,7 +80,8 @@ def jira_create_issue(
     assignee: Optional[str] = None,
     priority: Optional[str] = None,
     labels: Optional[List[str]] = None,
-    custom_fields: Optional[Dict[str, Any]] = None
+    custom_fields: Optional[Dict[str, Any]] = None,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Create a new Jira issue.
     
@@ -90,12 +95,14 @@ def jira_create_issue(
         labels: List of label strings (optional)
         custom_fields: Dictionary of custom field IDs to values (optional)
                       e.g., {'customfield_10001': 'value', 'customfield_10002': 123}
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with created issue data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not project_key:
             raise ValidationError('project_key is required')
@@ -126,7 +133,7 @@ def jira_create_issue(
         
         issue_key = response.get('key')
         if issue_key:
-            return jira_get_issue(issue_key)
+            return jira_get_issue(issue_key, credentials=credentials)
         return format_json_response(response)
         
     except ConfigurationError as e:
@@ -148,7 +155,8 @@ def jira_update_issue(
     assignee: Optional[str] = None,
     priority: Optional[str] = None,
     labels: Optional[List[str]] = None,
-    custom_fields: Optional[Dict[str, Any]] = None
+    custom_fields: Optional[Dict[str, Any]] = None,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Update an existing Jira issue.
     
@@ -161,12 +169,14 @@ def jira_update_issue(
         labels: New list of labels (optional)
         custom_fields: Dictionary of custom field IDs to values (optional)
                       e.g., {'customfield_10001': 'value', 'customfield_10002': 123}
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with updated issue data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')
@@ -191,7 +201,7 @@ def jira_update_issue(
         payload: Dict[str, Any] = {'fields': fields}
         client.put(client.api_path(f'issue/{issue_key}'), json=payload)
         
-        return jira_get_issue(issue_key)
+        return jira_get_issue(issue_key, credentials=credentials)
         
     except ConfigurationError as e:
         return format_error_response('ConfigurationError', str(e))
@@ -207,18 +217,24 @@ def jira_update_issue(
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def jira_delete_issue(issue_key: str, delete_subtasks: bool = False) -> str:
+def jira_delete_issue(
+    issue_key: str,
+    delete_subtasks: bool = False,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Delete a Jira issue.
     
     Args:
         issue_key: Issue key (e.g., 'PROJ-123')
         delete_subtasks: Whether to delete subtasks (default: False)
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with success message or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')
@@ -248,18 +264,24 @@ def jira_delete_issue(issue_key: str, delete_subtasks: bool = False) -> str:
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def jira_add_comment(issue_key: str, comment: str) -> str:
+def jira_add_comment(
+    issue_key: str,
+    comment: str,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Add a comment to a Jira issue.
     
     Args:
         issue_key: Issue key (e.g., 'PROJ-123')
         comment: Comment text
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with comment data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')

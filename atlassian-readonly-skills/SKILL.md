@@ -12,9 +12,13 @@ Read-only Python utilities for Jira, Confluence, and Bitbucket integration, supp
 
 ## Configuration
 
-Set environment variables based on your deployment type.
+Two configuration modes are supported:
 
-### Cloud (API Token)
+### Mode 1: Environment Variables (Traditional)
+
+Set environment variables based on your deployment type. This mode is used when `credentials` parameter is not provided to skill functions.
+
+#### Cloud (API Token)
 
 ```bash
 # Jira Cloud
@@ -30,7 +34,7 @@ CONFLUENCE_API_TOKEN=your_api_token
 
 Generate API tokens at: https://id.atlassian.com/manage-profile/security/api-tokens
 
-### Data Center / Server (PAT Token)
+#### Data Center / Server (PAT Token)
 
 ```bash
 # Jira Data Center
@@ -48,7 +52,67 @@ BITBUCKET_PAT_TOKEN=your_pat_token
 
 > **Note**: PAT Token takes precedence if both are provided.
 
+### Mode 2: Parameter-Based (Agent Environments)
+
+When deploying skills in Agent environments where environment variables are not available, pass credentials directly to skill functions using the `AtlassianCredentials` object.
+
+```python
+from scripts._common import AtlassianCredentials, check_available_skills
+from scripts.jira_issues import jira_get_issue
+
+# Create credentials object
+credentials = AtlassianCredentials(
+    # Jira configuration
+    jira_url="https://your-company.atlassian.net",
+    jira_username="your.email@company.com",
+    jira_api_token="your_api_token",
+    
+    # Confluence configuration (optional)
+    confluence_url="https://your-company.atlassian.net/wiki",
+    confluence_username="your.email@company.com",
+    confluence_api_token="your_api_token",
+    
+    # Bitbucket configuration (optional)
+    # bitbucket_url="https://bitbucket.your-company.com",
+    # bitbucket_pat_token="your_pat_token"
+)
+
+# Check which services are available
+availability = check_available_skills(credentials)
+print(availability["available_services"])  # ["jira", "confluence"]
+print(availability["unavailable_services"])  # {"bitbucket": "Missing bitbucket_url"}
+
+# Use skills with credentials parameter
+result = jira_get_issue(
+    issue_key="PROJ-123",
+    credentials=credentials  # Pass credentials here
+)
+```
+
+#### Partial Service Configuration
+
+You can configure only the services you need. Services without complete credentials will be unavailable:
+
+```python
+# Only configure Jira
+credentials = AtlassianCredentials(
+    jira_url="https://your-company.atlassian.net",
+    jira_username="your.email@company.com",
+    jira_api_token="your_api_token"
+)
+
+# Jira skills will work
+jira_get_issue("PROJ-123", credentials=credentials)  # ✓ Works
+
+# Confluence/Bitbucket skills will fail with ConfigurationError
+confluence_get_page("Page Title", "SPACE", credentials=credentials)  # ✗ Fails
+```
+
+For credentials object fields and authentication options, see the full documentation in `atlassian-skills`.
+
 ## Core Workflow
+
+### Using Environment Variables
 
 ```python
 from scripts.jira_issues import jira_get_issue
@@ -75,6 +139,48 @@ page = json.loads(result)
 print(f"Page: {page['title']}")
 ```
 
+### Using Credentials Parameter (Agent Mode)
+
+```python
+from scripts._common import AtlassianCredentials
+from scripts.jira_issues import jira_get_issue
+from scripts.jira_search import jira_search
+from scripts.confluence_pages import confluence_get_page
+import json
+
+# Create credentials
+credentials = AtlassianCredentials(
+    jira_url="https://company.atlassian.net",
+    jira_username="user@company.com",
+    jira_api_token="token123",
+    confluence_url="https://company.atlassian.net/wiki",
+    confluence_username="user@company.com",
+    confluence_api_token="token123"
+)
+
+# 1. Get a Jira issue with credentials
+result = jira_get_issue(
+    issue_key="PROJ-123",
+    credentials=credentials
+)
+issue = json.loads(result)
+
+# 2. Search for issues with credentials
+result = jira_search(
+    jql="project = PROJ AND status = 'In Progress'",
+    fields="summary,status,assignee",
+    limit=50,
+    credentials=credentials
+)
+
+# 3. Get a Confluence page with credentials
+result = confluence_get_page(
+    title="Feature Documentation",
+    space_key="DEV",
+    credentials=credentials
+)
+```
+
 ## Available Utilities
 
 ### Jira Issue Management (`scripts.jira_issues`)
@@ -83,7 +189,10 @@ print(f"Page: {page['title']}")
 from scripts.jira_issues import jira_get_issue
 
 # Get issue by key
-jira_get_issue(issue_key="PROJ-123")
+jira_get_issue(
+    issue_key="PROJ-123",
+    credentials=credentials  # Optional
+)
 ```
 
 ### Jira Search (`scripts.jira_search`)

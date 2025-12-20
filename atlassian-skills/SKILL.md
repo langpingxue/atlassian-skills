@@ -10,9 +10,13 @@ Python utilities for Jira, Confluence, and Bitbucket integration, supporting bot
 
 ## Configuration
 
-Set environment variables based on your deployment type.
+Two configuration modes are supported:
 
-### Cloud (API Token)
+### Mode 1: Environment Variables (Traditional)
+
+Set environment variables based on your deployment type. This mode is used when `credentials` parameter is not provided to skill functions.
+
+#### Cloud (API Token)
 
 ```bash
 # Jira Cloud
@@ -28,7 +32,7 @@ CONFLUENCE_API_TOKEN=your_api_token
 
 Generate API tokens at: https://id.atlassian.com/manage-profile/security/api-tokens
 
-### Data Center / Server (PAT Token)
+#### Data Center / Server (PAT Token)
 
 ```bash
 # Jira Data Center
@@ -46,7 +50,101 @@ BITBUCKET_PAT_TOKEN=your_pat_token
 
 > **Note**: PAT Token takes precedence if both are provided.
 
+### Mode 2: Parameter-Based (Agent Environments)
+
+When deploying skills in Agent environments where environment variables are not available, pass credentials directly to skill functions using the `AtlassianCredentials` object.
+
+```python
+from scripts._common import AtlassianCredentials, check_available_skills
+from scripts.jira_issues import jira_create_issue, jira_get_issue
+
+# Create credentials object
+credentials = AtlassianCredentials(
+    # Jira configuration
+    jira_url="https://your-company.atlassian.net",
+    jira_username="your.email@company.com",
+    jira_api_token="your_api_token",
+    
+    # Confluence configuration (optional)
+    confluence_url="https://your-company.atlassian.net/wiki",
+    confluence_username="your.email@company.com",
+    confluence_api_token="your_api_token",
+    
+    # Bitbucket configuration (optional)
+    # bitbucket_url="https://bitbucket.your-company.com",
+    # bitbucket_pat_token="your_pat_token"
+)
+
+# Check which services are available
+availability = check_available_skills(credentials)
+print(availability["available_services"])  # ["jira", "confluence"]
+print(availability["unavailable_services"])  # {"bitbucket": "Missing bitbucket_url"}
+
+# Use skills with credentials parameter
+result = jira_create_issue(
+    project_key="PROJ",
+    summary="New task",
+    issue_type="Task",
+    credentials=credentials  # Pass credentials here
+)
+```
+
+#### Partial Service Configuration
+
+You can configure only the services you need. Services without complete credentials will be unavailable:
+
+```python
+# Only configure Jira
+credentials = AtlassianCredentials(
+    jira_url="https://your-company.atlassian.net",
+    jira_username="your.email@company.com",
+    jira_api_token="your_api_token"
+)
+
+# Jira skills will work
+jira_get_issue("PROJ-123", credentials=credentials)  # ✓ Works
+
+# Confluence/Bitbucket skills will fail with ConfigurationError
+confluence_get_page("Page Title", "SPACE", credentials=credentials)  # ✗ Fails
+```
+
+#### Credentials Object Fields
+
+```python
+AtlassianCredentials(
+    # Jira
+    jira_url: Optional[str] = None,
+    jira_username: Optional[str] = None,
+    jira_api_token: Optional[str] = None,
+    jira_pat_token: Optional[str] = None,
+    jira_api_version: Optional[str] = None,  # '2' or '3', auto-detected if not set
+    jira_ssl_verify: bool = False,
+    
+    # Confluence
+    confluence_url: Optional[str] = None,
+    confluence_username: Optional[str] = None,
+    confluence_api_token: Optional[str] = None,
+    confluence_pat_token: Optional[str] = None,
+    confluence_api_version: Optional[str] = None,
+    confluence_ssl_verify: bool = False,
+    
+    # Bitbucket
+    bitbucket_url: Optional[str] = None,
+    bitbucket_username: Optional[str] = None,
+    bitbucket_api_token: Optional[str] = None,
+    bitbucket_pat_token: Optional[str] = None,
+    bitbucket_api_version: Optional[str] = None,
+    bitbucket_ssl_verify: bool = False
+)
+```
+
+For each service, provide either:
+- PAT Token (for Data Center/Server): `{service}_pat_token`
+- Username + API Token (for Cloud): `{service}_username` + `{service}_api_token`
+
 ## Core Workflow
+
+### Using Environment Variables
 
 ```python
 from scripts.jira_issues import jira_create_issue, jira_get_issue
@@ -73,6 +171,52 @@ result = confluence_create_page(
     space_key="DEV",
     title="Feature Documentation",
     content="<p>Documentation content here</p>"
+)
+```
+
+### Using Credentials Parameter (Agent Mode)
+
+```python
+from scripts._common import AtlassianCredentials
+from scripts.jira_issues import jira_create_issue, jira_get_issue
+from scripts.confluence_pages import confluence_create_page
+import json
+
+# Create credentials
+credentials = AtlassianCredentials(
+    jira_url="https://company.atlassian.net",
+    jira_username="user@company.com",
+    jira_api_token="token123",
+    confluence_url="https://company.atlassian.net/wiki",
+    confluence_username="user@company.com",
+    confluence_api_token="token123"
+)
+
+# 1. Create a Jira issue with credentials
+result = jira_create_issue(
+    project_key="PROJ",
+    summary="Implement new feature",
+    issue_type="Task",
+    description="Feature description here",
+    priority="High",
+    credentials=credentials  # Pass credentials
+)
+issue = json.loads(result)
+print(f"Created: {issue['key']}")
+
+# 2. Get issue details with credentials
+result = jira_get_issue(
+    issue_key="PROJ-123",
+    credentials=credentials
+)
+issue = json.loads(result)
+
+# 3. Create a Confluence page with credentials
+result = confluence_create_page(
+    space_key="DEV",
+    title="Feature Documentation",
+    content="<p>Documentation content here</p>",
+    credentials=credentials
 )
 ```
 
@@ -404,8 +548,41 @@ bitbucket_get_commit(
 from scripts.jira_users import jira_get_user_profile
 
 # Get Jira user profile
-jira_get_user_profile(user_identifier="user@company.com")
+jira_get_user_profile(
+    user_identifier="user@company.com",
+    credentials=credentials  # Optional
+)
 ```
+
+## Function Signature Pattern
+
+All skill functions follow this signature pattern:
+
+```python
+def skill_function(
+    required_param1: str,
+    required_param2: str,
+    optional_param: Optional[str] = None,
+    credentials: Optional[AtlassianCredentials] = None  # Always last parameter
+) -> str:
+    """Function description.
+    
+    Args:
+        required_param1: Description
+        required_param2: Description
+        optional_param: Description (optional)
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
+    
+    Returns:
+        JSON string with result or error information
+    """
+```
+
+The `credentials` parameter is:
+- **Optional**: If not provided, configuration loads from environment variables
+- **Always the last parameter**: Maintains consistent function signatures
+- **Backward compatible**: Existing code without credentials parameter continues to work
 
 ## Response Data Structures
 
@@ -481,7 +658,10 @@ else:
 This skill provides:
 - **Utilities**: Ready-to-use functions for common Atlassian operations
 - **Flexibility**: Support for both Cloud and Data Center deployments
+- **Dual Configuration**: Environment variables OR parameter-based credentials
+- **Agent-Ready**: Works in environments without environment variable access
 - **Consistency**: Unified error handling and response format
+- **Backward Compatible**: Existing code continues to work without changes
 
 It does NOT provide:
 - Direct API access (use the provided functions instead)
@@ -492,6 +672,12 @@ It does NOT provide:
 - Always check return values for errors
 - Use JQL/CQL for efficient searching
 - Batch operations when possible to reduce API calls
+- In Agent environments, check service availability before calling skills:
+  ```python
+  availability = check_available_skills(credentials)
+  if "jira" in availability["available_services"]:
+      result = jira_get_issue("PROJ-123", credentials=credentials)
+  ```
 
 ## Dependencies
 

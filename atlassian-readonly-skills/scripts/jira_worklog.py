@@ -44,7 +44,8 @@ def _simplify_worklog(worklog_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def jira_get_worklog(issue_key: str) -> str:
+def jira_get_worklog(issue_key: str,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Retrieve all worklog entries for a Jira issue.
     
     Args:
@@ -54,7 +55,7 @@ def jira_get_worklog(issue_key: str) -> str:
         JSON string with worklog entries or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')

@@ -8,9 +8,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     format_json_response,
     format_error_response,
@@ -36,19 +37,24 @@ def _simplify_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def jira_get_user_profile(user_identifier: str) -> str:
+def jira_get_user_profile(
+    user_identifier: str,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Get Jira user profile by identifier.
     
     Supports both Jira Cloud (accountId) and Jira Data Center/Server (username).
     
     Args:
         user_identifier: User identifier (email, account ID, username, or key)
+        credentials: Optional AtlassianCredentials object for Agent environments.
+                    If not provided, configuration will be loaded from environment variables.
     
     Returns:
         JSON string with user profile data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not user_identifier:
             raise ValidationError('user_identifier is required')

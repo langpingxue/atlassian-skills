@@ -23,7 +23,10 @@ from _common import (
 )
 
 
-def confluence_get_labels(page_id: str) -> str:
+def confluence_get_labels(
+    page_id: str,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Get all labels for a Confluence page.
     
     Args:
@@ -33,7 +36,7 @@ def confluence_get_labels(page_id: str) -> str:
         JSON string with list of labels or error information
     """
     try:
-        client = get_confluence_client()
+        client = get_confluence_client(credentials)
         
         if not page_id:
             raise ValidationError('page_id is required')

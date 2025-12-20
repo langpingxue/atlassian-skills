@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     simplify_issue,
     format_json_response,
@@ -28,7 +29,8 @@ def jira_search(
     jql: str,
     fields: Optional[str] = None,
     limit: int = 10,
-    start_at: int = 0
+    start_at: int = 0,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Search for Jira issues using JQL.
     
@@ -37,12 +39,14 @@ def jira_search(
         fields: Comma-separated list of fields to return (optional)
         limit: Maximum number of results to return (default: 10)
         start_at: Index of the first result for pagination (default: 0)
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with search results and pagination metadata or error
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not jql:
             raise ValidationError('jql query is required')
@@ -84,18 +88,24 @@ def jira_search(
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def jira_search_fields(keyword: str = "", limit: int = 10) -> str:
+def jira_search_fields(
+    keyword: str = "",
+    limit: int = 10,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Search for Jira field definitions by keyword.
     
     Args:
         keyword: Keyword to search for in field names (default: "")
         limit: Maximum number of results to return (default: 10)
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with field definitions or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if limit < 0:
             raise ValidationError('limit must be non-negative')

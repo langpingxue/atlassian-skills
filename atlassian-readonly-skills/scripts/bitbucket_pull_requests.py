@@ -61,7 +61,8 @@ def bitbucket_get_pull_request(
     project_key: str,
     repository_slug: str,
     pr_id: int
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get details of a pull request.
 
     Args:
@@ -80,7 +81,7 @@ def bitbucket_get_pull_request(
         if not pr_id:
             raise ValidationError("pr_id is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/pull-requests/{pr_id}"
         data = client.get(endpoint)
@@ -107,7 +108,8 @@ def bitbucket_get_pr_diff(
     project_key: str,
     repository_slug: str,
     pr_id: int
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get the diff of a pull request.
 
     Args:
@@ -126,7 +128,7 @@ def bitbucket_get_pr_diff(
         if not pr_id:
             raise ValidationError("pr_id is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/pull-requests/{pr_id}/diff"
         data = client.get(endpoint)

@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     format_json_response,
     format_error_response,
@@ -36,14 +37,15 @@ def _simplify_link_type(link_type_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def jira_get_link_types() -> str:
+def jira_get_link_types(
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get all available issue link types.
     
     Returns:
         JSON string with list of link types or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         response = client.get(client.api_path('issueLinkType'))
         
@@ -72,7 +74,8 @@ def jira_create_issue_link(
     inward_issue_key: str,
     outward_issue_key: str,
     comment: Optional[str] = None
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Create a link between two Jira issues.
     
     Args:
@@ -85,7 +88,7 @@ def jira_create_issue_link(
         JSON string with success message or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not link_type:
             raise ValidationError('link_type is required')
@@ -129,7 +132,8 @@ def jira_create_issue_link(
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def jira_link_to_epic(issue_key: str, epic_key: str) -> str:
+def jira_link_to_epic(issue_key: str, epic_key: str,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Link an issue to an epic.
     
     Args:
@@ -140,7 +144,7 @@ def jira_link_to_epic(issue_key: str, epic_key: str) -> str:
         JSON string with success message or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not issue_key:
             raise ValidationError('issue_key is required')
@@ -237,7 +241,8 @@ def jira_link_to_epic(issue_key: str, epic_key: str) -> str:
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def jira_remove_issue_link(link_id: str) -> str:
+def jira_remove_issue_link(link_id: str,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Remove a link between two issues.
     
     Args:
@@ -247,7 +252,7 @@ def jira_remove_issue_link(link_id: str) -> str:
         JSON string with success message or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not link_id:
             raise ValidationError('link_id is required')

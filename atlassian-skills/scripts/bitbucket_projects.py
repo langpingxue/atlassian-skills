@@ -7,6 +7,7 @@ in Bitbucket Server/Data Center.
 
 from typing import Optional, Dict, Any, List
 from ._common import (
+    AtlassianCredentials,
     get_bitbucket_client,
     format_json_response,
     format_error_response,
@@ -21,7 +22,8 @@ from ._common import (
 
 def bitbucket_list_projects(
     limit: int = 25,
-    start: int = 0
+    start: int = 0,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """List projects in Bitbucket Server.
 
@@ -33,7 +35,7 @@ def bitbucket_list_projects(
         JSON string with list of projects or error information
     """
     try:
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         params = {
             "limit": min(limit, 100),
@@ -79,7 +81,8 @@ def bitbucket_list_repositories(
     project_key: Optional[str] = None,
     limit: int = 25,
     start: int = 0
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """List repositories in Bitbucket Server.
 
     Args:
@@ -91,7 +94,7 @@ def bitbucket_list_repositories(
         JSON string with list of repositories or error information
     """
     try:
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         params = {
             "limit": min(limit, 100),

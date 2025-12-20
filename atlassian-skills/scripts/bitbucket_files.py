@@ -7,6 +7,7 @@ and searching code in Bitbucket Server/Data Center.
 
 from typing import Optional, Dict, Any
 from ._common import (
+    AtlassianCredentials,
     get_bitbucket_client,
     format_json_response,
     format_error_response,
@@ -23,7 +24,8 @@ def bitbucket_get_file_content(
     project_key: str,
     repository_slug: str,
     file_path: str,
-    branch: str = "master"
+    branch: str = "master",
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Get the content of a file from a repository.
 
@@ -44,7 +46,7 @@ def bitbucket_get_file_content(
         if not file_path:
             raise ValidationError("file_path is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         # Use the browse API to get file content
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/browse/{file_path}"
@@ -89,7 +91,8 @@ def bitbucket_search(
     search_type: str = "code",
     limit: int = 25,
     start: int = 0
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Search for code or files in Bitbucket Server.
 
     Args:
@@ -111,7 +114,7 @@ def bitbucket_search(
         if search_type not in valid_types:
             raise ValidationError(f"search_type must be one of: {', '.join(valid_types)}")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         # Build search query with filters
         search_query = query

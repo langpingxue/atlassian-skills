@@ -7,6 +7,7 @@ from Bitbucket Server/Data Center repositories.
 
 from typing import Optional, Dict, Any, List
 from ._common import (
+    AtlassianCredentials,
     get_bitbucket_client,
     format_json_response,
     format_error_response,
@@ -24,7 +25,8 @@ def bitbucket_get_commits(
     repository_slug: str,
     branch: str = "master",
     limit: int = 10,
-    start: int = 0
+    start: int = 0,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Get commits from a repository.
 
@@ -44,7 +46,7 @@ def bitbucket_get_commits(
         if not repository_slug:
             raise ValidationError("repository_slug is required")
 
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
 
         # Use the commits API endpoint
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/commits"
@@ -104,7 +106,8 @@ def bitbucket_get_commit(
     project_key: str,
     repository_slug: str,
     commit_id: str
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get details of a specific commit.
 
     Args:
@@ -123,7 +126,7 @@ def bitbucket_get_commit(
         if not commit_id:
             raise ValidationError("commit_id is required")
 
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
 
         # Use the commit details API endpoint
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/commits/{commit_id}"

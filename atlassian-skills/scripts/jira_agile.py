@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     simplify_issue,
     format_json_response,
@@ -56,7 +57,8 @@ def jira_get_agile_boards(
     board_type: Optional[str] = None,
     start_at: int = 0,
     limit: int = 50
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Search for Jira agile boards.
     
     Args:
@@ -70,7 +72,7 @@ def jira_get_agile_boards(
         JSON string with list of boards or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         params: Dict[str, Any] = {
             'startAt': start_at,
@@ -113,7 +115,8 @@ def jira_get_board_issues(
     fields: Optional[str] = None,
     start_at: int = 0,
     limit: int = 50
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get issues from a Jira agile board.
     
     Args:
@@ -127,7 +130,7 @@ def jira_get_board_issues(
         JSON string with list of issues or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not board_id:
             raise ValidationError('board_id is required')
@@ -175,7 +178,8 @@ def jira_get_sprints_from_board(
     state: Optional[str] = None,
     start_at: int = 0,
     limit: int = 50
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get sprints from a Jira agile board.
     
     Args:
@@ -188,7 +192,7 @@ def jira_get_sprints_from_board(
         JSON string with list of sprints or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not board_id:
             raise ValidationError('board_id is required')
@@ -236,7 +240,8 @@ def jira_get_sprint_issues(
     fields: Optional[str] = None,
     start_at: int = 0,
     limit: int = 50
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get all issues in a specific sprint.
     
     Args:
@@ -249,7 +254,7 @@ def jira_get_sprint_issues(
         JSON string with list of issues or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not sprint_id:
             raise ValidationError('sprint_id is required')
@@ -296,7 +301,8 @@ def jira_create_sprint(
     start_date: str,
     end_date: str,
     goal: Optional[str] = None
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Create a new sprint on a Jira agile board.
     
     Args:
@@ -310,7 +316,7 @@ def jira_create_sprint(
         JSON string with created sprint data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not board_id:
             raise ValidationError('board_id is required')
@@ -354,7 +360,8 @@ def jira_update_sprint(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     goal: Optional[str] = None
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Update an existing sprint's configuration.
     
     Args:
@@ -369,7 +376,7 @@ def jira_update_sprint(
         JSON string with updated sprint data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not sprint_id:
             raise ValidationError('sprint_id is required')
