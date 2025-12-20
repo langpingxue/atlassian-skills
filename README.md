@@ -10,6 +10,32 @@ Skills are folders containing a `SKILL.md` file that teach Claude Code new capab
 
 Learn more: https://docs.anthropic.com/en/docs/claude-code/skills
 
+## Choosing the Right Skill Variant
+
+This project provides two skill variants to match your access needs:
+
+### atlassian-skills (Full Access)
+
+The complete skill with all read and write operations. Use this if you need Claude to:
+- Create, update, or delete Jira issues
+- Create or modify Confluence pages
+- Create or merge pull requests in Bitbucket
+- Perform any write operations
+
+### atlassian-readonly-skills (Read-Only Access)
+
+A streamlined variant containing only read operations. **Recommended if you only need read access** because it:
+- **Reduces token consumption** - Smaller SKILL.md means less context sent to the LLM
+- **Prevents accidental modifications** - No write operations are exposed
+- **Improves safety** - Ideal for users with read-only permissions or when you want to prevent data changes
+
+The readonly variant includes:
+- Viewing Jira issues, searching with JQL, checking workflows and sprints
+- Reading Confluence pages, searching with CQL, viewing comments and labels
+- Browsing Bitbucket projects, repositories, pull requests, and commits
+
+Choose `atlassian-readonly-skills` unless you specifically need write capabilities.
+
 ## Features
 
 - **Jira**: Issue management, search (JQL), workflows, agile boards, sprints, worklogs
@@ -20,16 +46,27 @@ Learn more: https://docs.anthropic.com/en/docs/claude-code/skills
 
 ## Installation
 
-1. Clone or copy the `atlassian-skills` folder into your project
+1. Clone or copy the skill folder into your project:
+   - `atlassian-skills` for full read/write access
+   - `atlassian-readonly-skills` for read-only access (recommended if you don't need write operations)
+
 2. Install dependencies:
 
 ```bash
+# For full access
 pip install -r atlassian-skills/requirements.txt
+
+# For read-only access
+pip install -r atlassian-readonly-skills/requirements.txt
 ```
 
 ## Configuration
 
-Create a `.env` file in the `atlassian-skills` folder (copy from `.env.example`):
+Create a `.env` file in the skill folder (copy from `.env.example`):
+- `atlassian-skills/.env` for full access
+- `atlassian-readonly-skills/.env` for read-only access
+
+Both variants use the same configuration format:
 
 ### Jira
 
