@@ -1,6 +1,47 @@
 # Atlassian Skills API Reference
 
-Detailed usage examples and API documentation for Jira and Confluence tools.
+Detailed usage examples and API documentation for Jira, Confluence, and Bitbucket tools.
+
+## Configuration Modes
+
+All functions support two configuration modes:
+
+### Mode 1: Environment Variables (Traditional)
+
+```python
+# Set environment variables first
+# JIRA_URL=https://company.atlassian.net
+# JIRA_USERNAME=user@company.com
+# JIRA_API_TOKEN=your_token
+
+from scripts.jira_issues import jira_get_issue
+
+# Uses environment variables automatically
+result = jira_get_issue("PROJ-123")
+```
+
+### Mode 2: Parameter-Based (Agent Mode)
+
+```python
+from scripts._common import AtlassianCredentials, check_available_skills
+from scripts.jira_issues import jira_get_issue
+
+# Create credentials object
+credentials = AtlassianCredentials(
+    jira_url="https://company.atlassian.net",
+    jira_username="user@company.com",
+    jira_api_token="your_token"
+)
+
+# Check which services are available
+availability = check_available_skills(credentials)
+print(availability["available_services"])  # ["jira"]
+
+# Pass credentials to functions
+result = jira_get_issue("PROJ-123", credentials=credentials)
+```
+
+**Note:** All examples below can use either mode. For Agent mode, simply add `credentials=credentials` as the last parameter to any function call.
 
 ## Jira Examples
 
@@ -9,14 +50,30 @@ Detailed usage examples and API documentation for Jira and Confluence tools.
 ```python
 from scripts.jira_search import jira_search
 
-# Search using JQL
+# Using environment variables
 result = jira_search("project = MYPROJ AND status = 'In Progress'", limit=10)
+
+# Using credentials parameter (Agent mode)
+from scripts._common import AtlassianCredentials
+
+credentials = AtlassianCredentials(
+    jira_url="https://company.atlassian.net",
+    jira_username="user@company.com",
+    jira_api_token="token"
+)
+
+result = jira_search(
+    jql="project = MYPROJ AND status = 'In Progress'",
+    limit=10,
+    credentials=credentials
+)
 
 # Search with specific fields
 result = jira_search(
     jql="assignee = currentUser() AND status != Done",
     fields="summary,status,priority",
-    limit=20
+    limit=20,
+    credentials=credentials  # Optional
 )
 ```
 
@@ -25,6 +82,7 @@ result = jira_search(
 ```python
 from scripts.jira_issues import jira_create_issue
 
+# Environment variable mode
 result = jira_create_issue(
     project_key="MYPROJ",
     summary="Implement new feature",
@@ -36,6 +94,21 @@ result = jira_create_issue(
         "customfield_10001": "Sprint 5",
         "customfield_10002": {"value": "Option A"}
     }
+)
+
+# Agent mode with credentials
+result = jira_create_issue(
+    project_key="MYPROJ",
+    summary="Implement new feature",
+    issue_type="Task",
+    description="Detailed description here",
+    priority="High",
+    labels=["backend", "api"],
+    custom_fields={
+        "customfield_10001": "Sprint 5",
+        "customfield_10002": {"value": "Option A"}
+    },
+    credentials=credentials  # Pass credentials
 )
 ```
 
@@ -404,3 +477,148 @@ result = bitbucket_search(
   ]
 }
 ```
+
+## Agent Mode Complete Example
+
+When deploying in Agent environments without environment variables:
+
+```python
+from scripts._common import AtlassianCredentials, check_available_skills
+from scripts.jira_issues import jira_create_issue, jira_get_issue
+from scripts.jira_search import jira_search
+from scripts.confluence_pages import confluence_create_page
+import json
+
+# Step 1: Create credentials object with all needed services
+credentials = AtlassianCredentials(
+    # Jira configuration
+    jira_url="https://company.atlassian.net",
+    jira_username="user@company.com",
+    jira_api_token="jira_token_here",
+    
+    # Confluence configuration
+    confluence_url="https://company.atlassian.net/wiki",
+    confluence_username="user@company.com",
+    confluence_api_token="confluence_token_here",
+    
+    # Bitbucket configuration (optional)
+    bitbucket_url="https://bitbucket.company.com",
+    bitbucket_pat_token="bitbucket_pat_here"
+)
+
+# Step 2: Check which services are available
+availability = check_available_skills(credentials)
+print(f"Available: {availability['available_services']}")
+print(f"Unavailable: {availability['unavailable_services']}")
+
+# Step 3: Use skills with credentials parameter
+if "jira" in availability["available_services"]:
+    # Create an issue
+    result = jira_create_issue(
+        project_key="PROJ",
+        summary="New task from Agent",
+        issue_type="Task",
+        credentials=credentials  # Pass credentials
+    )
+    issue = json.loads(result)
+    
+    if not issue.get("error"):
+        print(f"Created issue: {issue['key']}")
+        
+        # Get the issue
+        result = jira_get_issue(
+            issue_key=issue['key'],
+            credentials=credentials
+        )
+        
+        # Search for issues
+        result = jira_search(
+            jql=f"project = PROJ AND key = {issue['key']}",
+            credentials=credentials
+        )
+
+if "confluence" in availability["available_services"]:
+    # Create a Confluence page
+    result = confluence_create_page(
+        space_key="TEAM",
+        title="Documentation from Agent",
+        content="<p>Created by Agent</p>",
+        credentials=credentials
+    )
+    page = json.loads(result)
+    if not page.get("error"):
+        print(f"Created page: {page['title']}")
+
+# Step 4: Handle unavailable services
+if "bitbucket" not in availability["available_services"]:
+    reason = availability["unavailable_services"].get("bitbucket", "Unknown")
+    print(f"Bitbucket unavailable: {reason}")
+```
+
+## Partial Service Configuration
+
+You can configure only the services you need:
+
+```python
+from scripts._common import AtlassianCredentials, check_available_skills
+
+# Only Jira configured
+jira_only_creds = AtlassianCredentials(
+    jira_url="https://company.atlassian.net",
+    jira_username="user@company.com",
+    jira_api_token="token"
+)
+
+# Check availability
+availability = check_available_skills(jira_only_creds)
+# Returns: {
+#   "available_services": ["jira"],
+#   "unavailable_services": {
+#     "confluence": "Missing confluence_url",
+#     "bitbucket": "Missing bitbucket_url"
+#   }
+# }
+
+# Jira functions work
+from scripts.jira_issues import jira_get_issue
+result = jira_get_issue("PROJ-123", credentials=jira_only_creds)  # ✓ Works
+
+# Confluence functions fail with clear error
+from scripts.confluence_pages import confluence_get_page
+result = confluence_get_page("Page", "SPACE", credentials=jira_only_creds)  # ✗ Fails
+# Returns: {"error": "Confluence credentials not provided...", "error_type": "ConfigurationError"}
+```
+
+## Credentials Object Reference
+
+```python
+AtlassianCredentials(
+    # Jira
+    jira_url: Optional[str] = None,
+    jira_username: Optional[str] = None,
+    jira_api_token: Optional[str] = None,
+    jira_pat_token: Optional[str] = None,
+    jira_api_version: Optional[str] = None,  # '2' or '3', auto-detected if not set
+    jira_ssl_verify: bool = False,
+    
+    # Confluence
+    confluence_url: Optional[str] = None,
+    confluence_username: Optional[str] = None,
+    confluence_api_token: Optional[str] = None,
+    confluence_pat_token: Optional[str] = None,
+    confluence_api_version: Optional[str] = None,
+    confluence_ssl_verify: bool = False,
+    
+    # Bitbucket
+    bitbucket_url: Optional[str] = None,
+    bitbucket_username: Optional[str] = None,
+    bitbucket_api_token: Optional[str] = None,
+    bitbucket_pat_token: Optional[str] = None,
+    bitbucket_api_version: Optional[str] = None,
+    bitbucket_ssl_verify: bool = False
+)
+```
+
+For each service, provide either:
+- **PAT Token** (for Data Center/Server): `{service}_pat_token`
+- **Username + API Token** (for Cloud): `{service}_username` + `{service}_api_token`

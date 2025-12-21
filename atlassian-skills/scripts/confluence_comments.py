@@ -9,9 +9,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_confluence_client,
     format_json_response,
     format_error_response,
@@ -39,7 +40,10 @@ def _simplify_comment(comment_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def confluence_get_comments(page_id: str) -> str:
+def confluence_get_comments(
+    page_id: str,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Get all comments for a Confluence page.
     
     Args:
@@ -49,7 +53,7 @@ def confluence_get_comments(page_id: str) -> str:
         JSON string with list of comments or error information
     """
     try:
-        client = get_confluence_client()
+        client = get_confluence_client(credentials)
         
         if not page_id:
             raise ValidationError('page_id is required')
@@ -87,7 +91,8 @@ def confluence_get_comments(page_id: str) -> str:
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def confluence_add_comment(page_id: str, content: str) -> str:
+def confluence_add_comment(page_id: str, content: str,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Add a comment to a Confluence page.
     
     Args:
@@ -98,7 +103,7 @@ def confluence_add_comment(page_id: str, content: str) -> str:
         JSON string with created comment data or error information
     """
     try:
-        client = get_confluence_client()
+        client = get_confluence_client(credentials)
         
         if not page_id:
             raise ValidationError('page_id is required')

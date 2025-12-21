@@ -50,7 +50,8 @@ def _simplify_version(version_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def jira_get_all_projects(include_archived: bool = False) -> str:
+def jira_get_all_projects(include_archived: bool = False,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get all accessible Jira projects.
     
     Args:
@@ -60,7 +61,7 @@ def jira_get_all_projects(include_archived: bool = False) -> str:
         JSON string with list of projects or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         params: Dict[str, Any] = {'expand': 'description'}
         if include_archived:
@@ -91,7 +92,8 @@ def jira_get_project_issues(
     project_key: str,
     limit: int = 10,
     start_at: int = 0
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get all issues for a specific Jira project.
     
     Args:
@@ -103,7 +105,7 @@ def jira_get_project_issues(
         JSON string with list of issues or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not project_key:
             raise ValidationError('project_key is required')
@@ -139,7 +141,8 @@ def jira_get_project_issues(
         return format_error_response('UnexpectedError', f'Unexpected error: {str(e)}')
 
 
-def jira_get_project_versions(project_key: str) -> str:
+def jira_get_project_versions(project_key: str,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get all versions for a specific Jira project.
     
     Args:
@@ -149,7 +152,7 @@ def jira_get_project_versions(project_key: str) -> str:
         JSON string with list of versions or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         if not project_key:
             raise ValidationError('project_key is required')
@@ -171,6 +174,8 @@ def jira_get_project_versions(project_key: str) -> str:
         return format_error_response('AuthenticationError', str(e))
     except ValidationError as e:
         return format_error_response('ValidationError', str(e))
+    except NotFoundError as e:
+        return format_error_response('NotFoundError', str(e))
     except (APIError, NetworkError) as e:
         return format_error_response(type(e).__name__, str(e))
     except Exception as e:

@@ -44,7 +44,8 @@ def confluence_get_page(
     page_id: Optional[str] = None,
     title: Optional[str] = None,
     space_key: Optional[str] = None
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get a Confluence page by ID or by title and space.
     
     Args:
@@ -56,7 +57,7 @@ def confluence_get_page(
         JSON string with page data or error information
     """
     try:
-        client = get_confluence_client()
+        client = get_confluence_client(credentials)
         
         if not page_id and not title:
             raise ValidationError('Either page_id or title is required')

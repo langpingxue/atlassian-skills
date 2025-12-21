@@ -38,7 +38,10 @@ def _simplify_comment(comment_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def confluence_get_comments(page_id: str) -> str:
+def confluence_get_comments(
+    page_id: str,
+    credentials: Optional[AtlassianCredentials] = None
+) -> str:
     """Get all comments for a Confluence page.
     
     Args:
@@ -48,7 +51,7 @@ def confluence_get_comments(page_id: str) -> str:
         JSON string with list of comments or error information
     """
     try:
-        client = get_confluence_client()
+        client = get_confluence_client(credentials)
         
         if not page_id:
             raise ValidationError('page_id is required')

@@ -11,6 +11,7 @@ import base64
 import json
 import os
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -100,6 +101,131 @@ def format_json_response(data: Any) -> str:
 
 
 # =============================================================================
+# Credentials Data Class
+# =============================================================================
+
+@dataclass
+class AtlassianCredentials:
+    """Unified credentials configuration for all Atlassian services.
+    
+    This class wraps authentication credentials for Jira, Confluence, and Bitbucket.
+    When deployed in an Agent environment without environment variables, pass this
+    object to skill functions to provide credentials programmatically.
+    
+    For each service, provide either:
+    - PAT Token (for Data Center/Server), or
+    - Username + API Token (for Cloud)
+    
+    If a service's credentials are not provided, that service will be unavailable.
+    """
+    
+    # Jira configuration
+    jira_url: Optional[str] = None
+    jira_username: Optional[str] = None
+    jira_api_token: Optional[str] = None
+    jira_pat_token: Optional[str] = None
+    jira_api_version: Optional[str] = None
+    jira_ssl_verify: bool = False
+    
+    # Confluence configuration
+    confluence_url: Optional[str] = None
+    confluence_username: Optional[str] = None
+    confluence_api_token: Optional[str] = None
+    confluence_pat_token: Optional[str] = None
+    confluence_api_version: Optional[str] = None
+    confluence_ssl_verify: bool = False
+    
+    # Bitbucket configuration
+    bitbucket_url: Optional[str] = None
+    bitbucket_username: Optional[str] = None
+    bitbucket_api_token: Optional[str] = None
+    bitbucket_pat_token: Optional[str] = None
+    bitbucket_api_version: Optional[str] = None
+    bitbucket_ssl_verify: bool = False
+    
+    def is_jira_available(self) -> bool:
+        """Check if Jira credentials are complete and valid.
+        
+        Returns:
+            True if Jira can be used, False otherwise
+        """
+        if not self.jira_url:
+            return False
+        has_pat = bool(self.jira_pat_token)
+        has_basic = bool(self.jira_username and self.jira_api_token)
+        return has_pat or has_basic
+    
+    def is_confluence_available(self) -> bool:
+        """Check if Confluence credentials are complete and valid.
+        
+        Returns:
+            True if Confluence can be used, False otherwise
+        """
+        if not self.confluence_url:
+            return False
+        has_pat = bool(self.confluence_pat_token)
+        has_basic = bool(self.confluence_username and self.confluence_api_token)
+        return has_pat or has_basic
+    
+    def is_bitbucket_available(self) -> bool:
+        """Check if Bitbucket credentials are complete and valid.
+        
+        Returns:
+            True if Bitbucket can be used, False otherwise
+        """
+        if not self.bitbucket_url:
+            return False
+        has_pat = bool(self.bitbucket_pat_token)
+        has_basic = bool(self.bitbucket_username and self.bitbucket_api_token)
+        return has_pat or has_basic
+    
+    def get_available_services(self) -> List[str]:
+        """Get list of available services based on provided credentials.
+        
+        Returns:
+            List of service names that have complete credentials
+            Example: ["jira", "confluence"]
+        """
+        services = []
+        if self.is_jira_available():
+            services.append("jira")
+        if self.is_confluence_available():
+            services.append("confluence")
+        if self.is_bitbucket_available():
+            services.append("bitbucket")
+        return services
+    
+    def get_unavailable_services(self) -> Dict[str, str]:
+        """Get dictionary of unavailable services with reasons.
+        
+        Returns:
+            Dictionary mapping service name to reason for unavailability
+            Example: {"bitbucket": "Missing bitbucket_url"}
+        """
+        unavailable = {}
+        
+        if not self.is_jira_available():
+            if not self.jira_url:
+                unavailable["jira"] = "Missing jira_url"
+            else:
+                unavailable["jira"] = "Missing authentication credentials (provide jira_pat_token or jira_username + jira_api_token)"
+        
+        if not self.is_confluence_available():
+            if not self.confluence_url:
+                unavailable["confluence"] = "Missing confluence_url"
+            else:
+                unavailable["confluence"] = "Missing authentication credentials (provide confluence_pat_token or confluence_username + confluence_api_token)"
+        
+        if not self.is_bitbucket_available():
+            if not self.bitbucket_url:
+                unavailable["bitbucket"] = "Missing bitbucket_url"
+            else:
+                unavailable["bitbucket"] = "Missing authentication credentials (provide bitbucket_pat_token or bitbucket_username + bitbucket_api_token)"
+        
+        return unavailable
+
+
+# =============================================================================
 # Configuration
 # =============================================================================
 
@@ -169,6 +295,69 @@ class AtlassianConfig:
             ssl_verify=ssl_verify
         )
         config._validate(prefix)
+        return config
+    
+    @classmethod
+    def from_credentials(cls, credentials: AtlassianCredentials, service: str) -> "AtlassianConfig":
+        """Create configuration from AtlassianCredentials object.
+        
+        Args:
+            credentials: AtlassianCredentials instance with service credentials
+            service: Service name ('jira', 'confluence', or 'bitbucket')
+        
+        Returns:
+            AtlassianConfig instance
+        
+        Raises:
+            ConfigurationError: If credentials for the service are incomplete
+        """
+        service = service.lower()
+        
+        if service == "jira":
+            if not credentials.is_jira_available():
+                raise ConfigurationError(
+                    "Jira credentials not provided or incomplete. "
+                    "Please provide jira_url and either jira_pat_token or (jira_username + jira_api_token)."
+                )
+            config = cls(
+                url=credentials.jira_url or "",
+                username=credentials.jira_username,
+                api_token=credentials.jira_api_token,
+                pat_token=credentials.jira_pat_token,
+                api_version=credentials.jira_api_version,
+                ssl_verify=credentials.jira_ssl_verify
+            )
+        elif service == "confluence":
+            if not credentials.is_confluence_available():
+                raise ConfigurationError(
+                    "Confluence credentials not provided or incomplete. "
+                    "Please provide confluence_url and either confluence_pat_token or (confluence_username + confluence_api_token)."
+                )
+            config = cls(
+                url=credentials.confluence_url or "",
+                username=credentials.confluence_username,
+                api_token=credentials.confluence_api_token,
+                pat_token=credentials.confluence_pat_token,
+                api_version=credentials.confluence_api_version,
+                ssl_verify=credentials.confluence_ssl_verify
+            )
+        elif service == "bitbucket":
+            if not credentials.is_bitbucket_available():
+                raise ConfigurationError(
+                    "Bitbucket credentials not provided or incomplete. "
+                    "Please provide bitbucket_url and either bitbucket_pat_token or (bitbucket_username + bitbucket_api_token)."
+                )
+            config = cls(
+                url=credentials.bitbucket_url or "",
+                username=credentials.bitbucket_username,
+                api_token=credentials.bitbucket_api_token,
+                pat_token=credentials.bitbucket_pat_token,
+                api_version=credentials.bitbucket_api_version,
+                ssl_verify=credentials.bitbucket_ssl_verify
+            )
+        else:
+            raise ConfigurationError(f"Unknown service: {service}. Must be 'jira', 'confluence', or 'bitbucket'.")
+        
         return config
     
     def _validate(self, prefix: Optional[str] = None) -> None:
@@ -358,34 +547,32 @@ class AtlassianClient:
 # Helper Functions
 # =============================================================================
 
-def get_jira_client() -> AtlassianClient:
+def get_jira_client(credentials: Optional[AtlassianCredentials] = None) -> AtlassianClient:
     """Get configured Jira client.
     
+    Args:
+        credentials: Optional AtlassianCredentials object. If not provided,
+                    configuration will be loaded from environment variables.
+    
     Returns:
         Configured AtlassianClient instance
         
     Raises:
         ConfigurationError: If configuration is missing or invalid
     """
-    config = AtlassianConfig.from_env('JIRA')
+    if credentials:
+        config = AtlassianConfig.from_credentials(credentials, 'jira')
+    else:
+        config = AtlassianConfig.from_env('JIRA')
     return AtlassianClient(config)
 
 
-def get_confluence_client() -> AtlassianClient:
+def get_confluence_client(credentials: Optional[AtlassianCredentials] = None) -> AtlassianClient:
     """Get configured Confluence client.
     
-    Returns:
-        Configured AtlassianClient instance
-        
-    Raises:
-        ConfigurationError: If configuration is missing or invalid
-    """
-    config = AtlassianConfig.from_env('CONFLUENCE')
-    return AtlassianClient(config)
-
-
-def get_bitbucket_client() -> AtlassianClient:
-    """Get configured Bitbucket client.
+    Args:
+        credentials: Optional AtlassianCredentials object. If not provided,
+                    configuration will be loaded from environment variables.
     
     Returns:
         Configured AtlassianClient instance
@@ -393,8 +580,65 @@ def get_bitbucket_client() -> AtlassianClient:
     Raises:
         ConfigurationError: If configuration is missing or invalid
     """
-    config = AtlassianConfig.from_env('BITBUCKET')
+    if credentials:
+        config = AtlassianConfig.from_credentials(credentials, 'confluence')
+    else:
+        config = AtlassianConfig.from_env('CONFLUENCE')
     return AtlassianClient(config)
+
+
+def get_bitbucket_client(credentials: Optional[AtlassianCredentials] = None) -> AtlassianClient:
+    """Get configured Bitbucket client.
+    
+    Args:
+        credentials: Optional AtlassianCredentials object. If not provided,
+                    configuration will be loaded from environment variables.
+    
+    Returns:
+        Configured AtlassianClient instance
+        
+    Raises:
+        ConfigurationError: If configuration is missing or invalid
+    """
+    if credentials:
+        config = AtlassianConfig.from_credentials(credentials, 'bitbucket')
+    else:
+        config = AtlassianConfig.from_env('BITBUCKET')
+    return AtlassianClient(config)
+
+
+def check_available_skills(credentials: AtlassianCredentials) -> Dict[str, Any]:
+    """Check which Atlassian skills are available based on provided credentials.
+    
+    This function helps Agents determine which skills can be used before attempting
+    to call them. Services without complete credentials will be listed as unavailable.
+    
+    Args:
+        credentials: AtlassianCredentials object with service credentials
+    
+    Returns:
+        Dictionary with availability information:
+        {
+            "available_services": ["jira", "confluence"],
+            "unavailable_services": {
+                "bitbucket": "Missing bitbucket_url"
+            }
+        }
+    
+    Example:
+        >>> creds = AtlassianCredentials(
+        ...     jira_url="https://company.atlassian.net",
+        ...     jira_username="user@company.com",
+        ...     jira_api_token="token123"
+        ... )
+        >>> result = check_available_skills(creds)
+        >>> print(result["available_services"])
+        ["jira"]
+    """
+    return {
+        "available_services": credentials.get_available_services(),
+        "unavailable_services": credentials.get_unavailable_services()
+    }
 
 
 def simplify_issue(issue_data: Dict[str, Any]) -> Dict[str, Any]:

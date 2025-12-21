@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from typing import Any, Dict, Optional
 
 from _common import (
+    AtlassianCredentials,
     get_jira_client,
     simplify_issue,
     format_json_response,
@@ -27,7 +28,8 @@ from _common import (
 def jira_get_issue(
     issue_key: str,
     fields: Optional[str] = None,
-    expand: Optional[str] = None
+    expand: Optional[str] = None,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Retrieve a Jira issue by key.
     
@@ -35,12 +37,14 @@ def jira_get_issue(
         issue_key: Issue key (e.g., 'PROJ-123')
         fields: Comma-separated list of fields to return (optional)
         expand: Comma-separated list of entities to expand (optional)
+        credentials: Optional AtlassianCredentials for Agent environments.
+                    If not provided, uses environment variables.
     
     Returns:
         JSON string with issue data or error information
     """
     try:
-        client = get_jira_client()
+        client = get_jira_client(credentials)
         
         params: Dict[str, Any] = {}
         if fields:

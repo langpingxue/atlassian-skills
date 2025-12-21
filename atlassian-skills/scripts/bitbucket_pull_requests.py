@@ -7,6 +7,7 @@ and managing pull requests in Bitbucket Server/Data Center.
 
 from typing import Optional, Dict, Any, List
 from ._common import (
+    AtlassianCredentials,
     get_bitbucket_client,
     format_json_response,
     format_error_response,
@@ -64,7 +65,8 @@ def bitbucket_create_pull_request(
     source_branch: str,
     target_branch: str,
     description: Optional[str] = None,
-    reviewers: Optional[List[str]] = None
+    reviewers: Optional[List[str]] = None,
+    credentials: Optional[AtlassianCredentials] = None
 ) -> str:
     """Create a new pull request.
 
@@ -92,7 +94,7 @@ def bitbucket_create_pull_request(
         if not target_branch:
             raise ValidationError("target_branch is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         payload: Dict[str, Any] = {
             "title": title,
@@ -143,7 +145,8 @@ def bitbucket_get_pull_request(
     project_key: str,
     repository_slug: str,
     pr_id: int
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get details of a pull request.
 
     Args:
@@ -162,7 +165,7 @@ def bitbucket_get_pull_request(
         if not pr_id:
             raise ValidationError("pr_id is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/pull-requests/{pr_id}"
         data = client.get(endpoint)
@@ -192,7 +195,8 @@ def bitbucket_merge_pull_request(
     pr_id: int,
     version: int,
     strategy: str = "merge-commit"
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Merge a pull request.
 
     Args:
@@ -219,7 +223,7 @@ def bitbucket_merge_pull_request(
         if strategy not in valid_strategies:
             raise ValidationError(f"strategy must be one of: {', '.join(valid_strategies)}")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         payload = {
             "version": version,
@@ -255,7 +259,8 @@ def bitbucket_decline_pull_request(
     repository_slug: str,
     pr_id: int,
     version: int
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Decline a pull request.
 
     Args:
@@ -277,7 +282,7 @@ def bitbucket_decline_pull_request(
         if version is None:
             raise ValidationError("version is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         payload = {"version": version}
         
@@ -311,7 +316,8 @@ def bitbucket_add_pr_comment(
     pr_id: int,
     text: str,
     parent_id: Optional[int] = None
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Add a comment to a pull request.
 
     Args:
@@ -334,7 +340,7 @@ def bitbucket_add_pr_comment(
         if not text:
             raise ValidationError("text is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         payload: Dict[str, Any] = {"text": text}
         if parent_id:
@@ -376,7 +382,8 @@ def bitbucket_get_pr_diff(
     project_key: str,
     repository_slug: str,
     pr_id: int
-) -> str:
+,
+    credentials: Optional[AtlassianCredentials] = None) -> str:
     """Get the diff of a pull request.
 
     Args:
@@ -395,7 +402,7 @@ def bitbucket_get_pr_diff(
         if not pr_id:
             raise ValidationError("pr_id is required")
         
-        client = get_bitbucket_client()
+        client = get_bitbucket_client(credentials)
         
         endpoint = f"/rest/api/1.0/projects/{project_key}/repos/{repository_slug}/pull-requests/{pr_id}/diff"
         data = client.get(endpoint)
