@@ -288,7 +288,24 @@ def jira_add_comment(
         if not comment:
             raise ValidationError('comment text is required')
         
-        payload: Dict[str, Any] = {'body': comment}
+        # Jira Cloud API v3 requires ADF (Atlassian Document Format)
+        if client.api_version == "3":
+            payload: Dict[str, Any] = {
+                'body': {
+                    'type': 'doc',
+                    'version': 1,
+                    'content': [
+                        {
+                            'type': 'paragraph',
+                            'content': [
+                                {'type': 'text', 'text': comment}
+                            ]
+                        }
+                    ]
+                }
+            }
+        else:
+            payload: Dict[str, Any] = {'body': comment}
         response = client.post(client.api_path(f'issue/{issue_key}/comment'), json=payload)
         
         simplified = {
