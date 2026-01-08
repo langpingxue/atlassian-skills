@@ -55,15 +55,25 @@ def jira_search(
         if start_at < 0:
             raise ValidationError('start_at must be non-negative')
         
-        params: Dict[str, Any] = {
-            'jql': jql,
-            'maxResults': limit,
-            'startAt': start_at
-        }
-        if fields:
-            params['fields'] = fields
-        
-        response = client.get(client.api_path('search'), params=params)
+        # Use new search/jql endpoint for Jira Cloud API v3
+        if client.api_version == "3":
+            # New API uses GET with query params
+            params: Dict[str, Any] = {
+                'jql': jql,
+                'maxResults': limit,
+            }
+            if fields:
+                params['fields'] = fields
+            response = client.get(client.api_path('search/jql'), params=params)
+        else:
+            params: Dict[str, Any] = {
+                'jql': jql,
+                'maxResults': limit,
+                'startAt': start_at
+            }
+            if fields:
+                params['fields'] = fields
+            response = client.get(client.api_path('search'), params=params)
         issues = [simplify_issue(issue) for issue in response.get('issues', [])]
         
         result = {
